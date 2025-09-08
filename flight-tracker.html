@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Flight Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #2d3748;
+      --accent: #3182ce;
+      --bg: #f7fafc;
+      --table-header: #e2e8f0;
+      --cheapest: #38a169;
+      --cheapest-bg: #e6fffa;
+      --border: #cbd5e1;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      margin: 0;
+      color: var(--primary);
+    }
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      padding: 2rem;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      color: var(--primary);
+      border-bottom: 2px solid transparent;
+      transition: border 0.2s;
+    }
+    .tab.active {
+      border-bottom: 2px solid var(--accent);
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+    input, select, button {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1rem;
+      background: #fff;
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #225ea8;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: #fff;
+    }
+    th, td {
+      padding: 0.75rem 0.5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--table-header);
+      cursor: pointer;
+      user-select: none;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .cheapest {
+      color: var(--cheapest);
+      font-weight: bold;
+      background: var(--cheapest-bg);
+      border-radius: 4px;
+      padding: 0.25em 0.5em;
+      display: inline-block;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .calendar-day {
+      background: #f1f5f9;
+      border-radius: 6px;
+      min-height: 60px;
+      padding: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s;
+      font-size: 0.95rem;
+    }
+    .calendar-day:hover {
+      background: #e2e8f0;
+    }
+    .calendar-day.selected {
+      outline: 2px solid var(--accent);
+      background: #e6f0fa;
+    }
+    .calendar-day .price {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.95em;
+    }
+    .calendar-day .cheapest {
+      background: var(--cheapest-bg);
+      color: var(--cheapest);
+      font-weight: bold;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      margin-top: 0.2em;
+    }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .calendar-header select {
+      font-size: 1rem;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+      form {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .calendar {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+      }
+      th, td {
+        padding: 0.5rem 0.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" id="tab-search">Search by Date</button>
+      <button class="tab" id="tab-month">Cheapest Days of Month</button>
+    </div>
+
+    <!-- Search Tab -->
+    <div class="tab-content active" id="content-search">
+      <form id="search-form">
+        <div>
+          <label for="from">From</label>
+          <input type="text" id="from" name="from" placeholder="e.g. JFK" required maxlength="3" style="text-transform:uppercase;">
+        </div>
+        <div>
+          <label for="to">To</label>
+          <input type="text" id="to" name="to" placeholder="e.g. LAX" required maxlength="3" style="text-transform:uppercase;">
+        </div>
+        <div>
+          <label for="date">Date</label>
+          <input type="date" id="date" name="date">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <input type="checkbox" id="cheapest-day" name="cheapest-day">
+          <label for="cheapest-day" style="display:inline;font-weight:normal;">Cheapest day of month</label>
+        </div>
+        <div>
+          <button type="submit">Search Flights</button>
+        </div>
+      </form>
+      <div id="search-results"></div>
+    </div>
+
+    <!-- Monthly Overview Tab -->
+    <div class="tab-content" id="content-month">
+      <div class="calendar-header">
+        <div>
+          <label for="month-select">Month:</label>
+          <select id="month-select"></select>
+          <select id="year-select"></select>
+        </div>
+        <div id="calendar-route">
+          <span id="calendar-from">JFK</span> → <span id="calendar-to">LAX</span>
+        </div>
+      </div>
+      <div id="calendar"></div>
+      <div id="calendar-flights"></div>
+    </div>
+  </div>
+  <script>
+    // --- State ---
+    const state = {
+      tab: 'search',
+      search: {
+        from: 'JFK',
+        to: 'LAX',
+        date: '',
+        cheapestDay: false,
+        results: [],
+        sortAsc: true,
+      },
+      month: {
+        from: 'JFK',
+        to: 'LAX',
+        year: new Date().getFullYear(),
+        month: new Date().getMonth(),
+        calendar: [],
+        selectedDay: null,
+        flights: [],
+      }
+    };
+
+    // --- Mock API ---
+    function mockFetchFlights({from, to, date}) {
+      // Generate 5-8 random flights for the given date
+      const airlines = ['Delta', 'United', 'American', 'JetBlue', 'Southwest', 'Alaska'];
+      const basePrices = [120, 140, 160, 180, 200, 220];
+      const flights = [];
+      const numFlights = Math.floor(Math.random() * 4) + 5;
+      for (let i = 0; i < numFlights; i++) {
+        const airline = airlines[Math.floor(Math.random() * airlines.length)];
+        const depHour = 6 + Math.floor(Math.random() * 12);
+        const depMin = Math.floor(Math.random() * 60);
+        const duration = 4 + Math.floor(Math.random() * 3); // 4-6 hours
+        const arrHour = depHour + duration;
+        const price = basePrices[Math.floor(Math.random() * basePrices.length)] + Math.floor(Math.random() * 60);
+        flights.push({
+          airline,
+          dep: `${String(depHour).padStart(2, '0')}:${String(depMin).padStart(2, '0')}`,
+          arr: `${String(arrHour).padStart(2, '0')}:${String(depMin).padStart(2, '0')}`,
+          duration: `${duration}h ${Math.floor(Math.random() * 60)}m`,
+          price,
+        });
+      }
+      // Simulate network delay
+      return new Promise(resolve => setTimeout(() => resolve(flights), 400));
+    }
+
+    function mockFetchMonthPrices({from, to, year, month}) {
+      // Generate random cheapest prices for each day of the month
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prices = [];
+      let minPrice = 9999;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const price = 100 + Math.floor(Math.random() * 200);
+        prices.push({ day: d, price });
+        if (price < minPrice) minPrice = price;
+      }
+      // Mark cheapest days
+      prices.forEach(p => p.isCheapest = p.price === minPrice);
+      return new Promise(resolve => setTimeout(() => resolve(prices), 300));
+    }
+
+    // --- Tab Switching ---
+    document.getElementById('tab-search').onclick = () => switchTab('search');
+    document.getElementById('tab-month').onclick = () => switchTab('month');
+
+    function switchTab(tab) {
+      state.tab = tab;
+      document.getElementById('tab-search').classList.toggle('active', tab === 'search');
+      document.getElementById('tab-month').classList.toggle('active', tab === 'month');
+      document.getElementById('content-search').classList.toggle('active', tab === 'search');
+      document.getElementById('content-month').classList.toggle('active', tab === 'month');
+      if (tab === 'month') {
+        // Sync route from search
+        state.month.from = state.search.from;
+        state.month.to = state.search.to;
+        document.getElementById('calendar-from').textContent = state.month.from;
+        document.getElementById('calendar-to').textContent = state.month.to;
+        renderMonthSelectors();
+        renderCalendar();
+      }
+    }
+
+    // --- Search Form ---
+    document.getElementById('search-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const from = document.getElementById('from').value.trim().toUpperCase();
+      const to = document.getElementById('to').value.trim().toUpperCase();
+      const date = document.getElementById('date').value;
+      const cheapestDay = document.getElementById('cheapest-day').checked;
+      state.search.from = from;
+      state.search.to = to;
+      state.search.date = date;
+      state.search.cheapestDay = cheapestDay;
+      state.search.results = [];
+      renderSearchResults('Loading...');
+      let searchDate = date;
+      if (cheapestDay || !date) {
+        // Find cheapest day in month
+        const now = date ? new Date(date) : new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const prices = await mockFetchMonthPrices({from, to, year, month});
+        const cheapest = prices.reduce((min, p) => p.price < min.price ? p : min, prices[0]);
+        searchDate = `${year}-${String(month+1).padStart(2,'0')}-${String(cheapest.day).padStart(2,'0')}`;
+      }
+      // Fetch flights for the (possibly cheapest) date
+      const flights = await mockFetchFlights({from, to, date: searchDate});
+      state.search.results = flights.map(f => ({...f, date: searchDate}));
+      renderSearchResults();
+    };
+
+    document.getElementById('cheapest-day').onchange = function() {
+      document.getElementById('date').disabled = this.checked;
+    };
+
+    // --- Search Results Table ---
+    function renderSearchResults(loadingMsg) {
+      const container = document.getElementById('search-results');
+      if (loadingMsg) {
+        container.innerHTML = `<div style="margin:1rem 0;">${loadingMsg}</div>`;
+        return;
+      }
+      const results = state.search.results;
+      if (!results.length) {
+        container.innerHTML = '';
+        return;
+      }
+      // Find cheapest price
+      const minPrice = Math.min(...results.map(f => f.price));
+      // Sort
+      const sorted = [...results].sort((a, b) => state.search.sortAsc ? a.price - b.price : b.price - a.price);
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Airline</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Duration</th>
+              <th id="sort-price" style="white-space:nowrap;">
+                Price
+                <span style="font-size:0.9em;vertical-align:middle;">
+                  ${state.search.sortAsc ? '▲' : '▼'}
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.map(f => `
+              <tr>
+                <td>${f.airline}</td>
+                <td>${f.dep}</td>
+                <td>${f.arr}</td>
+                <td>${f.duration}</td>
+                <td>
+                  <span class="${f.price === minPrice ? 'cheapest' : ''}">$${f.price}</span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:0.5rem;font-size:0.95em;">
+          Showing flights for <b>${state.search.from}</b> → <b>${state.search.to}</b> on <b>${sorted[0].date}</b>
+        </div>
+      `;
+      document.getElementById('sort-price').onclick = function() {
+        state.search.sortAsc = !state.search.sortAsc;
+        renderSearchResults();
+      };
+    }
+
+    // --- Month Selectors ---
+    function renderMonthSelectors() {
+      const monthSel = document.getElementById('month-select');
+      const yearSel = document.getElementById('year-select');
+      const now = new Date();
+      // Populate months
+      monthSel.innerHTML = '';
+      for (let m = 0; m < 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = new Date(2000, m, 1).toLocaleString('default', {month:'long'});
+        if (m === state.month.month) opt.selected = true;
+        monthSel.appendChild(opt);
+      }
+      // Populate years (current and next)
+      yearSel.innerHTML = '';
+      for (let y = now.getFullYear(); y <= now.getFullYear() + 1; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === state.month.year) opt.selected = true;
+        yearSel.appendChild(opt);
+      }
+      monthSel.onchange = function() {
+        state.month.month = parseInt(this.value);
+        renderCalendar();
+      };
+      yearSel.onchange = function() {
+        state.month.year = parseInt(this.value);
+        renderCalendar();
+      };
+    }
+
+    // --- Calendar Rendering ---
+    async function renderCalendar() {
+      const {from, to, year, month} = state.month;
+      const calendarDiv = document.getElementById('calendar');
+      calendarDiv.innerHTML = 'Loading...';
+      const prices = await mockFetchMonthPrices({from, to, year, month});
+      state.month.calendar = prices;
+      // Build calendar grid
+      const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+      let html = `
+        <div class="calendar">
+          ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div style="font-weight:bold;">${d}</div>`).join('')}
+      `;
+      let day = 1;
+      let started = false;
+      for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 7; col++) {
+          if (!started && col === firstDay) started = true;
+          if (!started || day > daysInMonth) {
+            html += `<div></div>`;
+          } else {
+            const p = prices.find(x => x.day === day);
+            html += `
+              <div class="calendar-day${state.month.selectedDay === day ? ' selected' : ''}" data-day="${day}">
+                <div>${day}</div>
+                <span class="price${p.isCheapest ? ' cheapest' : ''}">$${p.price}</span>
+              </div>
+            `;
+            day++;
+          }
+        }
+      }
+      html += `</div>`;
+      calendarDiv.innerHTML = html;
+      // Add click handlers
+      document.querySelectorAll('.calendar-day').forEach(el => {
+        el.onclick = function() {
+          const day = parseInt(this.getAttribute('data-day'));
+          state.month.selectedDay = day;
+          renderCalendar();
+          renderCalendarFlights(day);
+        };
+      });
+      // If a day is selected, show flights
+      if (state.month.selectedDay) {
+        renderCalendarFlights(state.month.selectedDay);
+      } else {
+        document.getElementById('calendar-flights').innerHTML = '';
+      }
+    }
+
+    // --- Calendar Flights Table ---
+    async function renderCalendarFlights(day) {
+      const {from, to, year, month} = state.month;
+      const date = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      document.getElementById('calendar-flights').innerHTML = 'Loading flights...';
+      const flights = await mockFetchFlights({from, to, date});
+      state.month.flights = flights.map(f => ({...f, date}));
+      // Find cheapest price
+      const minPrice = Math.min(...flights.map(f => f.price));
+      document.getElementById('calendar-flights').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Airline</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Duration</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${flights.map(f => `
+              <tr>
+                <td>${f.airline}</td>
+                <td>${f.dep}</td>
+                <td>${f.arr}</td>
+                <td>${f.duration}</td>
+                <td>
+                  <span class="${f.price === minPrice ? 'cheapest' : ''}">$${f.price}</span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:0.5rem;font-size:0.95em;">
+          Flights for <b>${from}</b> → <b>${to}</b> on <b>${date}</b>
+        </div>
+      `;
+    }
+
+    // --- Init ---
+    // Set default values
+    document.getElementById('from').value = state.search.from;
+    document.getElementById('to').value = state.search.to;
+    document.getElementById('date').value = '';
+    document.getElementById('cheapest-day').checked = false;
+    document.getElementById('date').disabled = false;
+    // Initial render
+    renderMonthSelectors();
+    renderCalendar();
+  </script>
+</body>
+</html>
